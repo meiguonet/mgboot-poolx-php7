@@ -2,6 +2,7 @@
 
 namespace mgboot\poolx;
 
+use mgboot\AppConf;
 use mgboot\bo\DotAccessData;
 use mgboot\util\JsonUtils;
 use Redis;
@@ -12,7 +13,10 @@ final class RedisConnection implements ConnectionInterface
 {
     use ConnectionTrait;
 
-    private Redis $redis;
+    /**
+     * @var Redis
+     */
+    private $redis;
 
     private function __construct(array $settings, ?PoolInterface $pool = null)
     {
@@ -21,20 +25,45 @@ final class RedisConnection implements ConnectionInterface
         }
 
         $data = DotAccessData::fromArray($settings);
+
+        if (AppConf::getEnv() === 'dev' && stripos(php_sapi_name(), 'cli') !== false) {
+            $cliSettings = $data->getAssocArray('cli-mode');
+        } else {
+            $cliSettings = [];
+        }
+
         $host = $data->getString('host');
 
-        if ($host === '') {
+        if (is_string($cliSettings['host']) && $cliSettings['host'] !== '') {
+            $host = $cliSettings['host'];
+        }
+
+        if (empty($host)) {
             $host = '127.0.0.1';
         }
 
         $port = $data->getInt('port');
 
+        if (is_int($cliSettings['port']) && $cliSettings['port'] > 0) {
+            $port = $cliSettings['port'];
+        }
+
         if ($port < 1) {
             $port = 6379;
         }
 
-        $database = $data->getInt('database');
         $password = $data->getString('password');
+
+        if (is_string($cliSettings['password']) && $cliSettings['password'] !== '') {
+            $password = $cliSettings['password'];
+        }
+
+        $database = $data->getInt('database');
+
+        if (is_int($cliSettings['database']) && $cliSettings['database'] >= 0) {
+            $database = $cliSettings['database'];
+        }
+
         $readTimeout = $data->getDuration('read-timeout');
 
         if ($readTimeout < 1) {
@@ -65,16 +94,16 @@ final class RedisConnection implements ConnectionInterface
             }
 
             $this->redis = $redis;
-        } catch (Throwable) {
+        } catch (Throwable $ex) {
             throw $ex1;
         }
     }
 
-    private function __clone(): void
+    private function __clone()
     {
     }
 
-    public static function create(array $settings, ?PoolInterface $pool = null): self
+    public static function create(array $settings, ?PoolInterface $pool = null): RedisConnection
     {
         return new self($settings, $pool);
     }

@@ -1,4 +1,7 @@
-<?php
+<?php /** @noinspection PhpUndefinedClassInspection */
+/** @noinspection PhpUndefinedNamespaceInspection */
+
+/** @noinspection PhpFullyQualifiedNameUsageInspection */
 
 namespace mgboot\poolx;
 
@@ -8,9 +11,20 @@ use Throwable;
 
 trait ConnectionTrait
 {
-    private ?PoolInterface $pool = null;
-    private bool $transationFlag = false;
-    private int $lastUsedAt = 0;
+    /**
+     * @var PoolInterface|null
+     */
+    private $pool = null;
+
+    /**
+     * @var bool
+     */
+    private $transationFlag = false;
+
+    /**
+     * @var int
+     */
+    private $lastUsedAt = 0;
 
     public function fromPool(): bool
     {
@@ -37,7 +51,6 @@ trait ConnectionTrait
         return $this->lastUsedAt;
     }
 
-    /** @noinspection PhpFullyQualifiedNameUsageInspection */
     public function close(): void
     {
         if (!method_exists($this, 'getRealConnection')) {
@@ -78,7 +91,7 @@ trait ConnectionTrait
             return;
         }
 
-        if (!($this instanceof ConnectionInterface) || $this->transationFlag) {
+        if ($this->transationFlag) {
             return;
         }
 

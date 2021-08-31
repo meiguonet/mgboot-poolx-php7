@@ -2,6 +2,7 @@
 
 namespace mgboot\poolx;
 
+use mgboot\AppConf;
 use mgboot\bo\DotAccessData;
 use mgboot\util\JsonUtils;
 use PDO;
@@ -12,7 +13,10 @@ final class PdoConnection implements ConnectionInterface
 {
     use ConnectionTrait;
 
-    private PDO $pdo;
+    /**
+     * @var PDO
+     */
+    private $pdo;
 
     private function __construct(array $settings, ?PoolInterface $pool = null)
     {
@@ -22,11 +26,65 @@ final class PdoConnection implements ConnectionInterface
 
         $data = DotAccessData::fromArray($settings);
 
+        if (AppConf::getEnv() === 'dev' && stripos(php_sapi_name(), 'cli') !== false) {
+            $cliSettings = $data->getAssocArray('cli-mode');
+        } else {
+            $cliSettings = [];
+        }
+
+        $dbname = $data->getString('database');
+
+        if (is_string($cliSettings['database']) && $cliSettings['database'] !== '') {
+            $dbname = $cliSettings['database'];
+        }
+
+        $host = $data->getString('host');
+
+        if (is_string($cliSettings['host']) && $cliSettings['host'] !== '') {
+            $host = $cliSettings['host'];
+        }
+
+        if (empty($host)) {
+            $host = '127.0.0.1';
+        }
+
+        $port = $data->getInt('port');
+
+        if (is_string($cliSettings['port']) && $cliSettings['port'] > 0) {
+            $port = $cliSettings['port'];
+        }
+
+        if ($port < 1) {
+            $port = 3306;
+        }
+
+        $charset = $data->getString('charset');
+
+        if (empty($charset)) {
+            $charset = 'utf8mb4';
+        }
+
+        $username = $data->getString('username');
+
+        if (is_string($cliSettings['username']) && $cliSettings['username'] !== '') {
+            $username = $cliSettings['username'];
+        }
+
+        if (empty($username)) {
+            $username = 'root';
+        }
+
+        $password = $data->getString('password');
+
+        if (is_string($cliSettings['password']) && $cliSettings['password'] !== '') {
+            $password = $cliSettings['password'];
+        }
+
         $sb = [
-            'mysql:dbname=' . $data->getString('database'),
-            'host=' . $data->getString('host', '127.0.0.1'),
-            'port=' . $data->getInt('port', 3306),
-            'charset' . $data->getString('charset', 'utf8mb4')
+            "mysql:dbname=$dbname",
+            "host=$host",
+            "port=$port",
+            "charset=$charset"
         ];
 
         $dsn = implode(';', $sb);
@@ -38,29 +96,19 @@ final class PdoConnection implements ConnectionInterface
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ];
 
-        $username = $data->getString('username', 'root');
-        $password = $data->getString('password');
-
         try {
             $this->pdo = new PDO($dsn, $username, $password, $opts);
-        } catch (Throwable) {
-            $map1 = [
-                'host' => $data->getString('host', '127.0.0.1'),
-                'port' => $data->getInt('port', 3306),
-                'username' => $username,
-                'password' => $password,
-                'datasource' => $data->getString('database')
-            ];
-
+        } catch (Throwable $ex) {
+            $map1 = compact('host', 'port', 'username', 'password', 'dbname');
             throw new RuntimeException('fail to create pdo connection, settings: ' . JsonUtils::toJson($map1));
         }
     }
 
-    private function __clone(): void
+    private function __clone()
     {
     }
 
-    public static function create(array $settings, ?PoolInterface $pool = null): self
+    public static function create(array $settings, ?PoolInterface $pool = null): PdoConnection
     {
         return new self($settings, $pool);
     }

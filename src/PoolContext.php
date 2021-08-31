@@ -9,13 +9,17 @@ final class PoolContext
 {
     const POOL_TYPE_DB = 1;
     const POOL_TYPE_REDIS = 2;
-    private static array $pools = [];
+
+    /**
+     * @var array
+     */
+    private static $pools = [];
 
     private function __construct()
     {
     }
 
-    private function __clone(): void
+    private function __clone()
     {
     }
 
@@ -36,7 +40,12 @@ final class PoolContext
         return $pool instanceof PoolInterface ? $pool : null;
     }
 
-    public static function getConnection(int $poolType, float|int|null $timeout = null): ?ConnectionInterface
+    /**
+     * @param int $poolType
+     * @param float|int|null $timeout
+     * @return ConnectionInterface|null
+     */
+    public static function getConnection(int $poolType, $timeout = null): ?ConnectionInterface
     {
         $pool = self::getPool($poolType);
 
@@ -46,7 +55,7 @@ final class PoolContext
 
         try {
             $conn = $pool->take($timeout);
-        } catch (Throwable) {
+        } catch (Throwable $ex) {
             $conn = null;
         }
 
@@ -55,11 +64,17 @@ final class PoolContext
 
     private static function getPoolKey(int $poolType, ?int $workerId = null): string
     {
-        $s1 = match ($poolType) {
-            self::POOL_TYPE_DB => 'db-',
-            self::POOL_TYPE_REDIS => 'redis-',
-            default => 'ntp-'
-        };
+        switch ($poolType) {
+            case self::POOL_TYPE_DB:
+                $s1 = 'db-';
+                break;
+            case self::POOL_TYPE_REDIS:
+                $s1 = 'redis-';
+                break;
+            default:
+                $s1 = 'ntp-';
+                break;
+        }
 
         return is_int($workerId) && $workerId >= 0 ? "{$s1}worker$workerId" : "{$s1}noworker";
     }

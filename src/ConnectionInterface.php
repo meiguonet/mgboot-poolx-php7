@@ -10,7 +10,7 @@ interface ConnectionInterface
 
     public function inTranstionMode(?bool $flag = null): bool;
 
-    public function getRealConnection(): mixed;
+    public function getRealConnection();
 
     public function updateLastUsedAt(): void;
 

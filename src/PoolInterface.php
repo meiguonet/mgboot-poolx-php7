@@ -8,9 +8,16 @@ interface PoolInterface
 
     public function run(): void;
 
-    public function take(int|float|null $timeout = null): ConnectionInterface;
+    /**
+     * @param int|float|null $timeout
+     * @return ConnectionInterface
+     */
+    public function take($timeout = null): ConnectionInterface;
 
     public function release(ConnectionInterface $conn): void;
 
-    public function destroy(int|string|null $timeout = null): void;
+    /**
+     * @param int|string|null $timeout
+     */
+    public function destroy($timeout = null): void;
 }

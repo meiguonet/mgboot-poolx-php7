@@ -1,4 +1,7 @@
-<?php
+<?php /** @noinspection PhpUndefinedClassInspection */
+/** @noinspection PhpUndefinedNamespaceInspection */
+
+/** @noinspection PhpFullyQualifiedNameUsageInspection */
 
 namespace mgboot\poolx;
 
@@ -13,14 +16,45 @@ use Throwable;
 
 trait PoolTrait
 {
-    private int $minActive = 10;
-    private int $maxActive = 10;
-    private int $currentActive = 0;
-    private float $takeTimeout = 3.0;
-    private int $maxIdle = 1800;
-    private int $idleCheckInternal = 10;
-    private mixed $connChan = null;
-    private ?ConnectionInterface $connectionBuilder = null;
+    /**
+     * @var int
+     */
+    private $minActive = 10;
+
+    /**
+     * @var int
+     */
+    private $maxActive = 10;
+
+    /**
+     * @var int
+     */
+    private $currentActive = 0;
+
+    /**
+     * @var float
+     */
+    private $takeTimeout = 3.0;
+
+    /**
+     * @var int
+     */
+    private $maxIdle = 1800;
+
+    /**
+     * @var int
+     */
+    private $idleCheckInternal = 10;
+
+    /**
+     * @var mixed
+     */
+    private $connChan = null;
+
+    /**
+     * @var ConnectionInterface|null
+     */
+    private $connectionBuilder = null;
 
     public function withConnectionBuilder(ConnectionInterface $builder): void
     {
@@ -35,7 +69,6 @@ trait PoolTrait
             return;
         }
 
-        /** @noinspection PhpFullyQualifiedNameUsageInspection */
         $ch = new \Swoole\Coroutine\Channel($this->maxActive);
 
         for ($i = 1; $i <= $this->minActive; $i++) {
@@ -43,7 +76,7 @@ trait PoolTrait
                 $conn = $builder->buildConnection();
                 $ch->push($conn);
                 $this->currentActive++;
-            } catch (Throwable) {
+            } catch (Throwable $ex) {
             }
         }
 
@@ -51,12 +84,15 @@ trait PoolTrait
         $this->runIdleChecker();
     }
 
-    public function take(int|float|null $timeout = null): ConnectionInterface
+    /**
+     * @param int|float|null $timeout
+     * @return ConnectionInterface
+     */
+    public function take($timeout = null): ConnectionInterface
     {
         $ex1 = new RuntimeException('fail to take connection from connection pool: ' . get_class($this));
         $ch = $this->connChan;
 
-        /** @noinspection PhpFullyQualifiedNameUsageInspection */
         if (!($ch instanceof \Swoole\Coroutine\Channel)) {
             throw $ex1;
         }
@@ -73,7 +109,7 @@ trait PoolTrait
         if ($this->currentActive < $this->maxActive && $builder instanceof ConnectionBuilderInterface) {
             try {
                 $conn = $builder->buildConnection();
-            } catch (Throwable) {
+            } catch (Throwable $ex) {
                 $conn = null;
             }
 
@@ -104,17 +140,18 @@ trait PoolTrait
     {
         $ch = $this->connChan;
 
-        /** @noinspection PhpFullyQualifiedNameUsageInspection */
         if ($ch instanceof \Swoole\Coroutine\Channel) {
             $ch->push($conn);
         }
     }
 
-    public function destroy(int|string|null $timeout = null): void
+    /**
+     * @param int|string|null $timeout
+     */
+    public function destroy($timeout = null): void
     {
         $ch = $this->connChan;
 
-        /** @noinspection PhpFullyQualifiedNameUsageInspection */
         if (!($ch instanceof \Swoole\Coroutine\Channel)) {
             return;
         }
@@ -152,7 +189,6 @@ trait PoolTrait
     {
         $ch = $this->connChan;
 
-        /** @noinspection PhpFullyQualifiedNameUsageInspection */
         if (!($ch instanceof \Swoole\Coroutine\Channel)) {
             return;
         }
@@ -173,7 +209,7 @@ trait PoolTrait
                 if ($now - $conn->getLastUsedAt() > $this->maxIdle) {
                     try {
                         $conn->close();
-                    } catch (Throwable) {
+                    } catch (Throwable $ex) {
                     }
 
                     $this->currentActive--;
@@ -195,7 +231,7 @@ trait PoolTrait
                         $conn = $builder->buildConnection();
                         $ch->push($conn);
                         $this->currentActive++;
-                    } catch (Throwable) {
+                    } catch (Throwable $ex) {
                     }
                 }
             }

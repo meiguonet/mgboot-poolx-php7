@@ -11,11 +11,11 @@ final class DbPool implements PoolInterface
         $this->init($settings);
     }
 
-    private function __clone(): void
+    private function __clone()
     {
     }
 
-    public static function create(array $settings): self
+    public static function create(array $settings): DbPool
     {
         return new self($settings);
     }
