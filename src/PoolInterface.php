@@ -4,7 +4,7 @@ namespace mgboot\poolx;
 
 interface PoolInterface
 {
-    public function withConnectionBuilder(ConnectionInterface $builder): void;
+    public function withConnectionBuilder(ConnectionBuilderInterface $builder): void;
 
     public function run(): void;
 

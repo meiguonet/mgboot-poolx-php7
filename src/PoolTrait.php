@@ -52,11 +52,11 @@ trait PoolTrait
     private $connChan = null;
 
     /**
-     * @var ConnectionInterface|null
+     * @var ConnectionBuilderInterface|null
      */
     private $connectionBuilder = null;
 
-    public function withConnectionBuilder(ConnectionInterface $builder): void
+    public function withConnectionBuilder(ConnectionBuilderInterface $builder): void
     {
         $this->connectionBuilder = $builder;
     }
