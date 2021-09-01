@@ -87,7 +87,7 @@ trait ConnectionTrait
 
     public function free(?Throwable $ex = null): void
     {
-        if ($ex instanceof Throwable && str_contains($ex->getMessage(), 'gone away')) {
+        if ($ex instanceof Throwable && strpos($ex->getMessage(), 'gone away') !== false) {
             return;
         }
 
